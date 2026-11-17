@@ -1,15 +1,17 @@
-import os
-import shutil
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.core import CORE
+from esphome.const import CONF_ID
 
-CONFIG_SCHEMA = cv.Schema({})
+wiz_udp_ns = cg.esphome_ns.namespace("wiz_udp")
+WizUdpComponent = wiz_udp_ns.class_("WizUdpComponent", cg.Component)
+
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(WizUdpComponent),
+    }
+).extend(cv.COMPONENT_SCHEMA)
+
 
 async def to_code(config):
-    component_dir = os.path.dirname(os.path.realpath(__file__))
-    src_file = os.path.join(component_dir, "wiz_udp.h")
-    dest_file = os.path.join(CORE.build_path, "src", "wiz_udp.h")
-    os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-    shutil.copyfile(src_file, dest_file)
-    cg.add_global(cg.RawStatement('#include "wiz_udp.h"'))
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
