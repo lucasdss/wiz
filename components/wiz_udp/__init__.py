@@ -10,5 +10,6 @@ async def to_code(config):
     component_dir = os.path.dirname(os.path.realpath(__file__))
     src_file = os.path.join(component_dir, "wiz_udp.h")
     dest_file = os.path.join(CORE.build_path, "src", "wiz_udp.h")
+    os.makedirs(os.path.dirname(dest_file), exist_ok=True)
     shutil.copyfile(src_file, dest_file)
     cg.add_global(cg.RawStatement('#include "wiz_udp.h"'))
