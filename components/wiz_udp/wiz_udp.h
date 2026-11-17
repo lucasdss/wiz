@@ -9,22 +9,28 @@
 #include <esp_timer.h>
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
+#include "esphome/components/wifi/wifi_component.h"
 
 namespace esphome {
 namespace wiz_udp {
 
 static const char *const TAG = "wiz_udp";
 
+class WizUdpComponent;
+inline WizUdpComponent *global_wiz_udp = nullptr;
+
 class WizUdpComponent : public Component {
  public:
   void setup() override {
-    this->sock_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (this->sock_ < 0) {
-      ESP_LOGE(TAG, "Failed to create UDP socket: errno %d", errno);
-    }
+    global_wiz_udp = this;
   }
 
   void send(const char *ip, const char *payload) {
+    // Prevent lwIP panic if called before Wi-Fi & TCP/IP stack are up
+    if (wifi::global_wifi_component == nullptr || !wifi::global_wifi_component->is_connected()) {
+      return;
+    }
+
     int64_t t_start = esp_timer_get_time() / 1000;
 
     if (this->sock_ < 0) {
@@ -62,10 +68,10 @@ class WizUdpComponent : public Component {
   int sock_{-1};
 };
 
-// Keep global helper so existing YAML lambdas calling send_wiz_udp() work unchanged
 inline void send_wiz_udp(const char *ip, const char *payload) {
-  static WizUdpComponent fallback;
-  fallback.send(ip, payload);
+  if (global_wiz_udp != nullptr) {
+    global_wiz_udp->send(ip, payload);
+  }
 }
 
 }  // namespace wiz_udp
